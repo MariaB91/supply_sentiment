@@ -1,0 +1,114 @@
+[
+    {
+        "marque": "Younited Credit",
+        "liens_marque": "www.younited-credit.com",
+        "categorie": "bank",
+        "reviews": 69598,
+        "pays": "FR",
+        "trust_score": "4,7"
+    },
+    {
+        "marque": "Cofidis",
+        "liens_marque": "cofidis.fr",
+        "categorie": "bank",
+        "reviews": 28731,
+        "pays": "FR",
+        "trust_score": "4,7"
+    },
+    {
+        "marque": "Qonto",
+        "liens_marque": "qonto.com",
+        "categorie": "bank",
+        "reviews": 19163,
+        "pays": "FR",
+        "trust_score": "4,7"
+    },
+    {
+        "marque": "BoursoBank",
+        "liens_marque": "boursobank.com",
+        "categorie": "bank",
+        "reviews": 31179,
+        "pays": "FR",
+        "trust_score": "4,5"
+    },
+    {
+        "marque": "Le Pot Commun",
+        "liens_marque": "lepotcommun.fr",
+        "categorie": "bank",
+        "reviews": 25708,
+        "pays": "FR",
+        "trust_score": "4,5"
+    },
+    {
+        "marque": "iGraal",
+        "liens_marque": "igraal.com",
+        "categorie": "bank",
+        "reviews": 34340,
+        "pays": "FR",
+        "trust_score": "4,4"
+    },
+    {
+        "marque": "Poulpeo",
+        "liens_marque": "www.poulpeo.com",
+        "categorie": "bank",
+        "reviews": 26142,
+        "pays": "FR",
+        "trust_score": "4,4"
+    },
+    {
+        "marque": "Sumeria",
+        "liens_marque": "sumeria.eu",
+        "categorie": "bank",
+        "reviews": 15175,
+        "pays": "FR",
+        "trust_score": "4,4"
+    },
+    {
+        "marque": "Surveylama",
+        "liens_marque": "surveylama.com",
+        "categorie": "bank",
+        "reviews": 16655,
+        "pays": "FR",
+        "trust_score": "4,1"
+    },
+    {
+        "marque": "Nickel",
+        "liens_marque": "nickel.eu",
+        "categorie": "bank",
+        "reviews": 23165,
+        "pays": "FR",
+        "trust_score": "4,0"
+    },
+    {
+        "marque": "PCS",
+        "liens_marque": "mypcs.com",
+        "categorie": "bank",
+        "reviews": 16985,
+        "pays": "FR",
+        "trust_score": "4,5"
+    },
+    {
+        "marque": "Orange Bank",
+        "liens_marque": "orangebank.fr",
+        "categorie": "bank",
+        "reviews": 15040,
+        "pays": "FR",
+        "trust_score": "4,4"
+    },
+    {
+        "marque": "Leetchi.com - la cagnotte en ligne",
+        "liens_marque": "leetchi.com",
+        "categorie": "bank",
+        "reviews": 46775,
+        "pays": "FR",
+        "trust_score": "4,1"
+    },
+    {
+        "marque": "Floa",
+        "liens_marque": "floabank.fr",
+        "categorie": "bank",
+        "reviews": 11892,
+        "pays": "FR",
+        "trust_score": "3,7"
+    }
+]
