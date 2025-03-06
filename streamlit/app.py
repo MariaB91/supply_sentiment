@@ -77,8 +77,14 @@ def show_dashboard():
     if df.empty:
         st.warning("Aucune donnée disponible.")
         return
+
+    # Sidebar
+    st.sidebar.header("⚙️ Filtres")
+    companies = list(trust_scores.keys())
     
-   
+    # Défini la variable selected_company dans le scope de la fonction show_dashboard
+    selected_company = st.sidebar.selectbox("🏢 Sélectionnez une entreprise", companies)
+    df = df[df['company'] == selected_company] if 'company' in df.columns else df
 
     # Récupérer le score de confiance pour l'entreprise sélectionnée
     trust_score = trust_scores.get(selected_company, 0.0)
@@ -116,7 +122,9 @@ def show_simulator():
     model = load_model()
     df, trust_scores = load_data()
 
-    
+    # Vérification des colonnes disponibles dans le DataFrame
+    st.write("Colonnes du DataFrame:", df.columns)
+
     selected_company = st.sidebar.selectbox("🏢 Entreprise à simuler", list(trust_scores.keys()))
     trust_score = trust_scores.get(selected_company, 0.0)
     st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
