@@ -34,6 +34,10 @@ def load_data():
         # Ajout de colonne "has_response" pour savoir si un avis a une réponse
         df['has_response'] = df['response_date'].notna()
 
+        # Débogage - Afficher les premières lignes du DataFrame
+        print("DataFrame après ajout des colonnes 'review_month' et 'has_response':")
+        print(df.head())  # Affichez les premières lignes du DataFrame pour vérifier la présence des colonnes.
+
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
@@ -74,6 +78,11 @@ def show_dashboard():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
+
+    # Vérifiez si la colonne 'review_month' existe
+    if 'review_month' not in df.columns:
+        st.error("'review_month' n'existe pas dans le DataFrame. Vérifiez la conversion des dates.")
+        return
 
     # Regroupement par mois
     df_monthly_reviews = df.groupby('review_month').size().reset_index(name='reviews_count')
