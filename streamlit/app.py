@@ -20,7 +20,7 @@ def load_data():
 
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
-            # Assurer la conversion correcte du format de date
+            # Conversion correcte en datetime
             df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')  # Convertir en datetime
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
@@ -74,6 +74,29 @@ def show_dashboard():
     # Regrouper les avis par mois
     df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
 
+    # Évolution des notes par mois (moyenne des notes)
+    df_trend_6m = df_6m.groupby(df_6m['month'])['rating'].mean().reset_index()
+    df_trend_6m['month'] = df_trend_6m['month'].astype(str)  # Convertir en string pour éviter les erreurs
+
+    col1, col2 = st.columns(2)
+
+    # Évolution des notes
+    with col1:
+        fig_6m = px.line(df_trend_6m, x='month', y='rating', title="Évolution des Notes (6 Mois)", markers=True, 
+                         line_shape='linear', title_x=0.5)
+        fig_6m.update_xaxes(title="Mois", showgrid=True, gridcolor='lightgray')
+        fig_6m.update_yaxes(title="Note Moyenne", showgrid=True, gridcolor='lightgray')
+        fig_6m.update_traces(line=dict(color='royalblue'))
+        st.plotly_chart(fig_6m, use_container_width=True)
+
+    # Distribution des notes
+    with col2:
+        fig_dist = px.histogram(df_6m, x='rating', nbins=5, title="Distribution des Notes", labels={'rating': 'Notes'}, 
+                                title_x=0.5, color_discrete_sequence=['royalblue'])
+        fig_dist.update_xaxes(title="Notes (1-5)", showgrid=True, gridcolor='lightgray')
+        fig_dist.update_yaxes(title="Nombre d'Avis", showgrid=True, gridcolor='lightgray')
+        st.plotly_chart(fig_dist, use_container_width=True)
+
     # Répartition globale des réponses et non-réponses
     responses_count = df_6m['has_response'].sum()
     no_responses_count = len(df_6m) - responses_count
@@ -85,7 +108,7 @@ def show_dashboard():
     explode = (0.1, 0)  # Mettre en évidence le premier segment
 
     fig_pie_global = go.Figure(go.Pie(labels=labels, values=sizes, hole=0.3, marker=dict(colors=colors), textinfo='percent+label'))
-    fig_pie_global.update_layout(title="Répartition globale des réponses et non-réponses", height=400)
+    fig_pie_global.update_layout(title="Répartition Globale des Réponses et Non-Réponses", title_x=0.5, height=400)
     st.plotly_chart(fig_pie_global, use_container_width=True)
 
     # Répartition des réponses par mois
@@ -104,11 +127,13 @@ def show_dashboard():
             labels=['Réponses', 'Non-réponses'],
             values=[data['Réponses'], data['Non-réponses']],
             name=str(month),
-            hole=0.3
+            hole=0.3,
+            marker=dict(colors=colors)
         ))
 
     fig_pie_month.update_layout(
-        title="Répartition des réponses par mois",
+        title="Répartition des Réponses par Mois",
+        title_x=0.5,
         height=500,
         grid=dict(rows=3, columns=2),
         showlegend=False
