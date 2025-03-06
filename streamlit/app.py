@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
 import json
 
 st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
@@ -81,11 +80,20 @@ def show_dashboard():
     st.write("Aperçu des données après transformation des dates :")
     st.write(df.head())
 
+    # Vérification des colonnes disponibles avant la fusion
+    st.write("Colonnes disponibles pour la fusion :")
+    st.write(df.columns)
+
     # Groupe des avis par mois
     df_monthly_reviews = df.groupby('review_month').size().reset_index(name='reviews_count')
 
     # Groupe des réponses par mois
     df_monthly_responses = df[df['response_date'].notna()].groupby('response_month').size().reset_index(name='responses_count')
+
+    # Vérification avant la fusion
+    st.write("Aperçu des données regroupées par mois :")
+    st.write(df_monthly_reviews.head())
+    st.write(df_monthly_responses.head())
 
     # Merge des deux DataFrames
     df_reviews_responses = pd.merge(df_monthly_reviews, df_monthly_responses, how='left', on='review_month')
