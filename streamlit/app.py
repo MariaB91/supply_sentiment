@@ -90,3 +90,17 @@ def show_dashboard():
     with col1:
         df_trend_6m = df_6m.groupby(pd.Grouper(key='review_date', freq='M'))['rating'].mean().reset_index()
         fig_6m = px.line(df_trend_6m, x='review_date', y='rating', title="Évolution des notes (6 mois)")
+        st.plotly_chart(fig_6m, use_container_width=True)
+    
+    with col2:
+        df_trend_1w = df_1w.groupby(pd.Grouper(key='review_date', freq='W'))['rating'].mean().reset_index()
+        fig_1w = px.line(df_trend_1w, x='review_date', y='rating', title="Évolution des notes (par semaine)")
+        st.plotly_chart(fig_1w, use_container_width=True)
+
+def main():
+    page = st.sidebar.radio("Navigation", ["Dashboard"])
+    if page == "Dashboard":
+        show_dashboard()
+
+if __name__ == "__main__":  
+    main()
