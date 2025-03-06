@@ -1,51 +1,3 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import json
-
-st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
-
-@st.cache_data
-def load_data():
-    try:
-        with open('beautifulsoup/reviews.json', 'r', encoding='utf-8') as f:
-            reviews_data = json.load(f)
-        with open('beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
-            trust_data = json.load(f)
-        
-        marque_to_company = {item['marque']: item['liens_marque'] for item in trust_data if isinstance(item, dict)}
-        trust_scores = {item['liens_marque']: float(item.get('trust_score', '0').replace(',', '.')) for item in trust_data if isinstance(item, dict)}
-
-        df = pd.DataFrame(reviews_data)
-        if 'review_date' in df.columns:
-            # Conversion correcte en datetime
-            df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')  # Convertir en datetime
-        return df, trust_scores, marque_to_company
-    except FileNotFoundError as e:
-        st.error(f"Erreur de chargement des fichiers: {str(e)}")
-        return pd.DataFrame(), {}, {}
-
-def create_trust_gauge(trust_score):
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=trust_score,
-        domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Trust Score", 'font': {'size': 24}},
-        gauge={
-            'axis': {'range': [0, 5]},
-            'bar': {'color': "darkblue"},
-            'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},
-                {'range': [2, 4], 'color': '#FFA500'},
-                {'range': [4, 5], 'color': '#04AA6D'}
-            ]
-        }
-    ))
-    fig.update_layout(height=300)
-    return fig
-
 def show_dashboard():
     st.title("📊 Dashboard d'Analyse des Avis Clients")
     
@@ -73,10 +25,13 @@ def show_dashboard():
 
     # Regrouper les avis par mois
     df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
+    df_6m['month'] = df_6m['month'].astype(str)  # Assurer que 'month' est en format string
 
     # Évolution des notes par mois (moyenne des notes)
     df_trend_6m = df_6m.groupby(df_6m['month'])['rating'].mean().reset_index()
-    df_trend_6m['month'] = df_trend_6m['month'].astype(str)  # Convertir en string pour éviter les erreurs
+
+    # Vérification des valeurs manquantes et suppression si nécessaire
+    df_trend_6m = df_trend_6m.dropna(subset=['rating', 'month'])  # Supprimer les lignes avec des valeurs manquantes
 
     col1, col2 = st.columns(2)
 
