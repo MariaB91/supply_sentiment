@@ -8,7 +8,7 @@ st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layo
 @st.cache_data
 def load_data():
     """Charge les données depuis le fichier JSON"""
-    df = pd.read_json("prediction/dashboard_data.json")
+    df = pd.read_json("Prediction/dashboard_data.json")
     return df
 
 # Charger les données
