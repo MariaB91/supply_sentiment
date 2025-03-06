@@ -10,7 +10,7 @@ st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layo
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_json('merged_data.json', lines=True)
+        df = pd.read_json('beautifulsoup/merged_data.json', lines=True)
 
         # Vérification des colonnes essentielles
         required_columns = {"review_title", "review_body", "rating", "reviews", "pays", "trust_score", 
