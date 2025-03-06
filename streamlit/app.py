@@ -24,11 +24,11 @@ def load_data():
     """Charge les données depuis les fichiers JSON"""
     try:
         # Chargement des reviews
-        with open('data treatment/beautifulsoup/reviews.json', 'r', encoding='utf-8') as f:
+        with open('beautifulsoup/reviews.json', 'r', encoding='utf-8') as f:
             reviews_data = json.load(f)
         
         # Chargement du trust score
-        with open('data treatment/beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
+        with open('beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
             trust_data = json.load(f)
             trust_score = trust_data.get('trust_score', 0.0)
         
@@ -90,7 +90,7 @@ def get_top_words(texts, n=10):
     return Counter(words).most_common(n)
 
 def predict_rating(text, model):
-    """Prédit le rating pour un nouveau commentaire"""
+    """Prédit le rating pour un nouveau review"""
     if model is None:
         return 0, [0, 0, 0, 0, 0]
     prediction = model.predict([text])[0]
@@ -208,18 +208,18 @@ def show_dashboard():
         st.plotly_chart(fig_dist, use_container_width=True)
     
     # Word Cloud et Top mots
-    if 'commentaire' in df_period.columns:
+    if 'review' in df_period.columns:
         col1, col2 = st.columns(2)
         
         with col1:
-            wordcloud = WordCloud(background_color='white').generate(' '.join(df_period['commentaire'].fillna('')))
+            wordcloud = WordCloud(background_color='white').generate(' '.join(df_period['review'].fillna('')))
             fig, ax = plt.subplots()
             ax.imshow(wordcloud)
             ax.axis('off')
             st.pyplot(fig)
         
         with col2:
-            top_words = get_top_words(df_period['commentaire'].fillna(''))
+            top_words = get_top_words(df_period['review'].fillna(''))
             fig_words = px.bar(
                 x=[word for word, _ in top_words],
                 y=[count for _, count in top_words],
@@ -244,13 +244,13 @@ def show_simulator():
             use_container_width=True
         )
     
-    # Zone de saisie du commentaire
-    commentaire = st.text_area("Entrez votre commentaire :")
+    # Zone de saisie du review
+    review = st.text_area("Entrez votre review :")
     
     if st.button("Analyser"):
-        if commentaire:
+        if review:
             # Prédiction
-            prediction, probas = predict_rating(commentaire, model)
+            prediction, probas = predict_rating(review, model)
             
             # Affichage du résultat
             st.subheader("Résultat de l'analyse")
@@ -262,13 +262,13 @@ def show_simulator():
             with col2:
                 st.metric("Confiance", f"{max(probas):.1%}")
             
-            # Simulation avec le nouveau commentaire
+            # Simulation avec le nouveau review
             df_sim = df.copy()
             df_sim = pd.concat([
                 df_sim,
                 pd.DataFrame({
                     'date': [datetime.now()],
-                    'commentaire': [commentaire],
+                    'review': [review],
                     'rating': [prediction]
                 })
             ])
@@ -303,7 +303,7 @@ def show_simulator():
             ))
             fig.add_trace(go.Histogram(
                 x=df_sim['rating'],
-                name="Après le nouveau commentaire",
+                name="Après le nouveau review",
                 opacity=0.75
             ))
             fig.update_layout(
