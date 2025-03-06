@@ -107,13 +107,13 @@ def show_dashboard():
     # WordCloud
     col1, col2 = st.columns(2)
     with col1:
-        wordcloud = WordCloud(background_color='white').generate(' '.join(df['review'].fillna('')))  # Assurez-vous que 'review' est la bonne colonne
+        wordcloud = WordCloud(background_color='white').generate(' '.join(df['review_text'].fillna('')))  # Assurez-vous que 'review' est la bonne colonne
         fig, ax = plt.subplots()
         ax.imshow(wordcloud)
         ax.axis('off')
         st.pyplot(fig)
     with col2:
-        top_words = Counter(' '.join(df['review'].fillna('')).lower().split()).most_common(10)  # 'review' doit être la bonne colonne
+        top_words = Counter(' '.join(df['review_text'].fillna('')).lower().split()).most_common(10)  # 'review' doit être la bonne colonne
         st.plotly_chart(px.bar(x=[w for w, _ in top_words], y=[c for _, c in top_words], title="🔝 Mots les plus fréquents"))
 
 # Page de simulation
@@ -132,7 +132,7 @@ def show_simulator():
     review = st.text_area("📝 Entrez votre review :")
     if st.button("🔍 Analyser"):
         if review and model:
-            prediction = model.predict([review])[0]
+            prediction = model.predict([review_text])[0]
             st.metric("⭐ Note prédite", prediction)
 
 # Fonction principale
