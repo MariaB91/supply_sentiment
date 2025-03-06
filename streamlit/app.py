@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
 import json
+from datetime import datetime
 
 st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
 
@@ -21,10 +21,19 @@ def load_data():
 
         df = pd.DataFrame(reviews_data)
 
-        # Conversion des dates en datetime
-        df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
-        df['response_date'] = pd.to_datetime(df['response_date'], errors='coerce')
+        # Vérification de l'existence de la colonne review_date
+        if 'review_date' not in df.columns:
+            st.error("'review_date' n'existe pas dans le DataFrame.")
+            return pd.DataFrame(), {}, {}
 
+        # Conversion des dates en datetime
+        df['review_date'] = pd.to_datetime(df['review_date'], format='%d-%m-%Y', errors='coerce')  # Conversion en datetime avec format
+        df['response_date'] = pd.to_datetime(df['response_date'], format='%d-%m-%Y', errors='coerce')  # Conversion en datetime avec format
+
+        # Vérification après conversion
+        if df['review_date'].isnull().any():
+            st.warning("Certaines valeurs dans 'review_date' sont invalides après conversion.")
+        
         # Création des nouvelles colonnes pour regroupement
         df['review_month'] = df['review_date'].dt.to_period('M')  # Regrouper par mois
         df['review_week'] = df['review_date'].dt.to_period('W')   # Regrouper par semaine
@@ -34,10 +43,10 @@ def load_data():
         # Ajout de colonne "has_response" pour savoir si un avis a une réponse
         df['has_response'] = df['response_date'].notna()
 
-        # Débogage - Afficher les premières lignes du DataFrame
+        # Vérification du DataFrame après ajout des nouvelles colonnes
         print("DataFrame après ajout des colonnes 'review_month' et 'has_response':")
-        print(df.head())  # Affichez les premières lignes du DataFrame pour vérifier la présence des colonnes.
-
+        print(df.head())  # Affichez les premières lignes du DataFrame pour vérifier les colonnes
+        
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
@@ -79,9 +88,9 @@ def show_dashboard():
     with col2:
         st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
 
-    # Vérifiez si la colonne 'review_month' existe
+    # Vérifiez si la colonne 'review_month' existe après transformation
     if 'review_month' not in df.columns:
-        st.error("'review_month' n'existe pas dans le DataFrame. Vérifiez la conversion des dates.")
+        st.error("'review_month' n'existe pas dans le DataFrame après transformation. Vérifiez la conversion des dates.")
         return
 
     # Regroupement par mois
