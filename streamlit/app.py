@@ -24,11 +24,11 @@ def load_data():
     """Charge les données depuis les fichiers JSON"""
     try:
         # Chargement des reviews
-        with open('data treatment/beautifulsoup/reviews.json', 'r', encoding='utf-8') as f:
+        with open('beautifulsoup/reviews.json', 'r', encoding='utf-8') as f:
             reviews_data = json.load(f)
         
         # Chargement du trust score
-        with open('data treatment/beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
+        with open('beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
             trust_data = json.load(f)
             trust_score = trust_data.get('trust_score', 0.0)
         
@@ -36,8 +36,8 @@ def load_data():
         df = pd.DataFrame(reviews_data)
         
         # Conversion des dates si nécessaire
-        if 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'])
+        if 'review_date' in df.columns:
+            df['review_date'] = pd.to_datetime(df['review_date'])
         
         return df, trust_score
         
