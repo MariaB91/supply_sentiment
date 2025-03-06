@@ -25,17 +25,18 @@ def load_data():
         with open('beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
             trust_data = json.load(f)
         
-        # Vérification de la structure des données
-        trust_scores = {item['marque']: item.get('trust_score', 0.0) for item in trust_data if isinstance(item, dict)}
-        
+        # Création du mapping marque -> company_name
+        marque_to_company = {item['marque']: item['liens_marque'] for item in trust_data if isinstance(item, dict)}
+        trust_scores = {item['liens_marque']: float(item.get('trust_score', 0.0)) for item in trust_data if isinstance(item, dict)}
+
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
             df['review_date'] = pd.to_datetime(df['review_date'])
-        
-        return df, trust_scores
+
+        return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
-        return pd.DataFrame(), {}
+        return pd.DataFrame(), {}, {}
 
 # Création d'une jauge pour le trust score
 def create_trust_gauge(trust_score):
@@ -45,12 +46,12 @@ def create_trust_gauge(trust_score):
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Trust Score", 'font': {'size': 24}},
         gauge={
-            'axis': {'range': [0, 1]},
+            'axis': {'range': [0, 5]},  # Trustpilot est souvent noté sur 5
             'bar': {'color': "darkblue"},
             'steps': [
-                {'range': [0, 0.3], 'color': '#FF4B4B'},
-                {'range': [0.3, 0.7], 'color': '#FFA500'},
-                {'range': [0.7, 1], 'color': '#04AA6D'}
+                {'range': [0, 2], 'color': '#FF4B4B'},
+                {'range': [2, 4], 'color': '#FFA500'},
+                {'range': [4, 5], 'color': '#04AA6D'}
             ]
         }
     ))
@@ -61,15 +62,17 @@ def create_trust_gauge(trust_score):
 def show_dashboard():
     st.title("📊 Dashboard d'Analyse des Avis Clients")
     
-    df, trust_scores = load_data()
+    df, trust_scores, marque_to_company = load_data()
     if df.empty:
         st.warning("Aucune donnée disponible.")
         return
-    
+
     # Sélection de la marque
-    marque = st.sidebar.selectbox("Sélectionner une marque", options=list(trust_scores.keys()))
-    df = df[df['marque'] == marque]
-    trust_score = trust_scores.get(marque, 0.0)
+    marque = st.sidebar.selectbox("Sélectionner une marque", options=list(marque_to_company.keys()))
+    company_name = marque_to_company.get(marque, "")
+
+    df = df[df['company_name'] == company_name]
+    trust_score = trust_scores.get(company_name, 0.0)
     
     # Affichage du trust score
     col1, col2, col3 = st.columns([1, 2, 1])
