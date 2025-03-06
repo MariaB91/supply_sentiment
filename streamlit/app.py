@@ -76,27 +76,36 @@ def show_dashboard():
 
     col1, col2 = st.columns(2)
 
-    # Évolution des notes par mois
+    # Graphique de l'évolution des notes par mois
     with col1:
-        df_trend_6m = df_6m.groupby(df_6m['review_date'].dt.to_period('M'))['rating'].mean().reset_index()
-        df_trend_6m['review_date'] = df_trend_6m['review_date'].astype(str)
+        df['month'] = df['review_date'].dt.to_period('M')  # Groupement par mois
+        df_monthly = df.groupby('month')['rating'].mean().reset_index()
 
-        fig_6m = px.line(df_trend_6m, x='review_date', y='rating', title="Évolution des Notes (6 Mois)", markers=True)
+        fig_6m = px.line(df_monthly, x='month', y='rating', title="Évolution des Notes Moyennes par Mois", markers=True)
         fig_6m.update_xaxes(title="Mois", tickangle=-45)
         fig_6m.update_yaxes(title="Note Moyenne")
         fig_6m.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
         st.plotly_chart(fig_6m, use_container_width=True)
 
-    # Distribution des notes par mois
+    # Graphique de la répartition des notes par semaine
     with col2:
-        fig_dist = px.histogram(df_6m, x='rating', nbins=5, title="Distribution des Notes", labels={'rating': 'Notes'})
-        fig_dist.update_xaxes(title="Notes (1-5)", tickmode='linear')
-        fig_dist.update_yaxes(title="Nombre d'Avis")
-        fig_dist.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
-        st.plotly_chart(fig_dist, use_container_width=True)
+        df['week'] = df['review_date'].dt.to_period('W')  # Groupement par semaine
+        df_weekly = df.groupby('week')['rating'].value_counts().unstack(fill_value=0).stack().reset_index(name='count')
 
-    # Nombre de réponses et ratio
+        fig_weekly = px.bar(df_weekly, x='week', y='count', color='rating', title="Répartition des Notes par Semaine", labels={'count': 'Nombre d\'Avis'})
+        fig_weekly.update_xaxes(title="Semaine")
+        fig_weekly.update_yaxes(title="Nombre d'Avis")
+        fig_weekly.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
+        st.plotly_chart(fig_weekly, use_container_width=True)
+
+    # Graphique de la répartition des réponses (Réponses vs Non-réponses)
     df_6m['has_response'] = df_6m['response'].notna()
+    responses = df_6m['has_response'].value_counts(normalize=True) * 100  # Ratio de réponses
+    responses_fig = px.pie(values=responses, names=['Réponses', 'Non-réponses'], title="Répartition des Réponses aux Avis")
+    responses_fig.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
+    st.plotly_chart(responses_fig, use_container_width=True)
+
+    # Graphique du ratio de réponses mensuel
     df_responses = df_6m.groupby(df_6m['review_date'].dt.to_period('M')).agg(
         total_reviews=('rating', 'count'),
         total_responses=('has_response', 'sum')
@@ -105,7 +114,6 @@ def show_dashboard():
     df_responses['response_ratio'] = df_responses['total_responses'] / df_responses['total_reviews'] * 100
     df_responses['review_date'] = df_responses['review_date'].astype(str)
 
-    # Graphique du ratio de réponses par mois
     fig_response = px.bar(df_responses, x='review_date', y='response_ratio', title="Ratio de Réponses aux Avis par Mois", labels={'response_ratio': '% Réponses'}, text='response_ratio')
     fig_response.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig_response.update_xaxes(title="Mois")
