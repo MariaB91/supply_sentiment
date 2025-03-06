@@ -20,7 +20,7 @@ def load_data():
 
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
-            df['review_date'] = pd.to_datetime(df['review_date'])
+            df['review_date'] = pd.to_datetime(df['review_date'], format='%d-%m-%Y', errors='coerce')  # Conversion en datetime
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
@@ -31,18 +31,18 @@ def create_trust_gauge(trust_score):
         mode="gauge+number",
         value=trust_score,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Trust Score", 'font': {'size': 24, 'color': 'black'}},  # Couleur du titre
+        title={'text': "Trust Score", 'font': {'size': 24}},
         gauge={
-            'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': 'black'},
-            'bar': {'color': "#04AA6D"},  # Vert
+            'axis': {'range': [0, 5]},
+            'bar': {'color': "darkblue"},
             'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},  # Rouge
-                {'range': [2, 4], 'color': '#FFA500'},  # Orange
-                {'range': [4, 5], 'color': '#04AA6D'}  # Vert
+                {'range': [0, 2], 'color': '#FF4B4B'},
+                {'range': [2, 4], 'color': '#FFA500'},
+                {'range': [4, 5], 'color': '#04AA6D'}
             ]
         }
     ))
-    fig.update_layout(height=350, margin={'t': 40, 'b': 0, 'l': 0, 'r': 0})  # Marges ajustées
+    fig.update_layout(height=300)
     return fig
 
 def show_dashboard():
@@ -67,55 +67,50 @@ def show_dashboard():
 
     df_6m = df[df['review_date'] >= start_6m]
 
-    col1, col2 = st.columns(2)
+    # Regroupement des avis par mois
+    df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
 
-    # Regrouper les avis par mois pour le comptage des notes
-    with col1:
-        df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
-        df_trend_6m = df_6m.groupby('month')['rating'].mean().reset_index()
-        df_trend_6m['month'] = df_trend_6m['month'].dt.strftime('%Y-%m')  # Format Mois-Année
+    # Répartition globale des réponses et non-réponses
+    df_6m['has_response'] = df_6m['response'].notna()  # Création d'une colonne 'has_response' (True si réponse)
 
-        fig_6m = px.line(df_trend_6m, x='month', y='rating', title="Évolution des notes (6 mois)", markers=True,
-                         template="plotly_dark")  # Thème sombre
-        fig_6m.update_xaxes(title="Mois", tickangle=45)
-        fig_6m.update_yaxes(title="Note moyenne", range=[1, 5], showgrid=True, gridwidth=1, gridcolor='lightgray')
-        fig_6m.update_traces(line=dict(width=3, color='deepskyblue'))  # Améliorer l'aspect de la ligne
-        st.plotly_chart(fig_6m, use_container_width=True)
+    responses_count = df_6m['has_response'].sum()
+    no_responses_count = len(df_6m) - responses_count
 
-    # Distribution des notes par semaine
-    with col2:
-        df_6m['week'] = df_6m['review_date'].dt.to_period('W').dt.start_time
-        df_weekly_dist = df_6m.groupby([df_6m['week'], 'rating']).size().reset_index(name='count')
+    # Création du graphique pie chart global (réponses vs non-réponses)
+    labels = ['Réponses', 'Non-réponses']
+    sizes = [responses_count, no_responses_count]
+    colors = ['#A1D6E2', '#FFB2A6']
+    explode = (0.1, 0)  # Mettre en évidence le premier segment
 
-        fig_dist = px.line(df_weekly_dist, x='week', y='count', color='rating', 
-                           title="Distribution des notes par semaine", markers=True,
-                           template="plotly_dark")  # Thème sombre
-        fig_dist.update_xaxes(title="Semaine", tickangle=45)
-        fig_dist.update_yaxes(title="Nombre d'avis", showgrid=True, gridwidth=1, gridcolor='lightgray')
-        fig_dist.update_traces(line=dict(width=2))  # Améliorer les lignes
-        st.plotly_chart(fig_dist, use_container_width=True)
+    fig_pie_global = go.Figure(go.Pie(labels=labels, values=sizes, hole=0.3, marker=dict(colors=colors), textinfo='percent+label'))
+    fig_pie_global.update_layout(title="Répartition globale des réponses et non-réponses", height=400)
+    st.plotly_chart(fig_pie_global, use_container_width=True)
 
-    # Nombre de réponses et ratio
-    df_6m['has_response'] = df_6m['response'].notna() & df_6m['response'].str.strip().ne('null')
-    df_responses = df_6m.groupby('month').agg(
-        total_reviews=('rating', 'count'),
-        total_responses=('has_response', 'sum')
-    ).reset_index()
+    # Répartition des réponses par mois
+    df_responses_by_month = df_6m.groupby(['month', 'has_response']).size().unstack(fill_value=0)
+    
+    # Transformation des données pour un graphique pie
+    df_responses_by_month['Réponses'] = df_responses_by_month[True]
+    df_responses_by_month['Non-réponses'] = df_responses_by_month[False]
 
-    df_responses['response_ratio'] = df_responses['total_responses'] / df_responses['total_reviews'] * 100
-    df_responses['month'] = df_responses['month'].dt.strftime('%Y-%m')  # Format Mois-Année
+    # Visualisation par mois
+    fig_pie_month = go.Figure()
 
-    fig_response = px.bar(df_responses, x='month', y='response_ratio',
-                          title="Ratio de réponses aux avis par mois",
-                          labels={'response_ratio': '% Réponses'},
-                          text='response_ratio', 
-                          color='response_ratio',
-                          color_continuous_scale='Viridis',  # Palette de couleurs améliorée
-                          template="plotly_dark")  # Thème sombre
-    fig_response.update_traces(texttemplate='%{text:.1f}%', textposition='outside', width=0.8)
-    fig_response.update_xaxes(title="Mois")
-    fig_response.update_yaxes(title="Pourcentage de réponses (%)", showgrid=True, gridwidth=1, gridcolor='lightgray')
-    st.plotly_chart(fig_response, use_container_width=True)
+    for month, data in df_responses_by_month.iterrows():
+        fig_pie_month.add_trace(go.Pie(
+            labels=['Réponses', 'Non-réponses'],
+            values=[data['Réponses'], data['Non-réponses']],
+            name=str(month),
+            hole=0.3
+        ))
+
+    fig_pie_month.update_layout(
+        title="Répartition des réponses par mois",
+        height=500,
+        grid=dict(rows=3, columns=2),
+        showlegend=False
+    )
+    st.plotly_chart(fig_pie_month, use_container_width=True)
 
 if __name__ == "__main__":
     show_dashboard()
