@@ -47,7 +47,7 @@ def load_data():
 @st.cache_resource
 def load_model():
     try:
-        return mlflow.sklearn.load_model("Prediction/models/final_model")
+        return mlflow.sklearn.load_model("Prediction/models/final_model/MLmodel")
     except Exception as e:
         st.error(f"Erreur de chargement du modèle: {str(e)}")
         return None
