@@ -31,8 +31,8 @@ def load_data():
         df = pd.DataFrame(reviews_data)
 
         # Vérifier et convertir les dates si la colonne 'date' existe
-        if 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        if 'review_date' in df.columns:
+            df['review_date'] = pd.to_datetime(df['date'], errors='coerce')
 
         # Charger les scores de confiance des entreprises
         trust_scores = {
@@ -47,7 +47,7 @@ def load_data():
 @st.cache_resource
 def load_model():
     try:
-        return mlflow.sklearn.load_model("models/final_model")
+        return mlflow.sklearn.load_model("Prediction/models/final_model")
     except Exception as e:
         st.error(f"Erreur de chargement du modèle: {str(e)}")
         return None
@@ -98,7 +98,7 @@ def show_dashboard():
     # Graphiques
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(px.line(df, x='date', y='rating', title="📈 Évolution des notes"))
+        st.plotly_chart(px.line(df, x='review_date', y='rating', title="📈 Évolution des notes"))
     with col2:
         st.plotly_chart(px.histogram(df, x='rating', title="📊 Distribution des notes"))
 
