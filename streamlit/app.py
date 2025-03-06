@@ -20,9 +20,10 @@ def load_data():
         trust_scores = {item['liens_marque']: float(item.get('trust_score', '0').replace(',', '.')) for item in trust_data if isinstance(item, dict)}
 
         df = pd.DataFrame(reviews_data)
-        # Conversion de la colonne 'review_date' en datetime
-        if 'review_date' in df.columns:
-            df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
+        # Conversion de la colonne 'review_date' et 'response_date' en datetime
+        df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
+        df['response_date'] = pd.to_datetime(df['response_date'], errors='coerce')
+        
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
@@ -74,55 +75,51 @@ def show_dashboard():
     # Filtrer les données des 6 derniers mois
     df_6m = df[df['review_date'] >= start_6m]
 
+    # **Feature Engineering**
+    df_6m['review_month'] = df_6m['review_date'].dt.to_period('M').astype(str)  # Mois de review
+    df_6m['review_week'] = df_6m['review_date'].dt.to_period('W').astype(str)    # Semaine de review
+    df_6m['response_month'] = df_6m['response_date'].dt.to_period('M').astype(str) if 'response_date' in df_6m.columns else None  # Mois de réponse
+    df_6m['response_week'] = df_6m['response_date'].dt.to_period('W').astype(str) if 'response_date' in df_6m.columns else None  # Semaine de réponse
+
     col1, col2 = st.columns(2)
 
-    # Graphique de l'évolution des notes par mois
+    # **Graphique 1 : Évolution des Notes Moyennes par Mois**
     with col1:
-        df['month'] = df['review_date'].dt.to_period('M')  # Groupement par mois
-        df['month'] = df['month'].astype(str)  # Conversion de Period en str
-        df_monthly = df.groupby('month')['rating'].mean().reset_index()
+        df_monthly = df_6m.groupby('review_month')['rating'].mean().reset_index()
 
-        fig_6m = px.line(df_monthly, x='month', y='rating', title="Évolution des Notes Moyennes par Mois", markers=True)
+        fig_6m = px.line(df_monthly, x='review_month', y='rating', title="Évolution des Notes Moyennes par Mois", markers=True)
         fig_6m.update_xaxes(title="Mois", tickangle=-45)
         fig_6m.update_yaxes(title="Note Moyenne")
         fig_6m.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
         st.plotly_chart(fig_6m, use_container_width=True)
 
-    # Graphique de la répartition des notes par semaine
+    # **Graphique 2 : Répartition des Réponses**
     with col2:
-        df['week'] = df['review_date'].dt.to_period('W')  # Groupement par semaine
-        df['week'] = df['week'].astype(str)  # Conversion de Period en str
-        df_weekly = df.groupby('week')['rating'].value_counts().unstack(fill_value=0).stack().reset_index(name='count')
+        df_6m['has_response'] = df_6m['response'].notna()
+        responses = df_6m['has_response'].value_counts(normalize=True) * 100  # Ratio de réponses
+        responses_fig = px.pie(values=responses, names=['Réponses', 'Non-réponses'], title="Répartition des Réponses aux Avis")
+        responses_fig.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
+        st.plotly_chart(responses_fig, use_container_width=True)
 
-        fig_weekly = px.bar(df_weekly, x='week', y='count', color='rating', title="Répartition des Notes par Semaine", labels={'count': 'Nombre d\'Avis'})
-        fig_weekly.update_xaxes(title="Semaine")
-        fig_weekly.update_yaxes(title="Nombre d'Avis")
-        fig_weekly.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
-        st.plotly_chart(fig_weekly, use_container_width=True)
+    col1, col2 = st.columns(2)
 
-    # Graphique de la répartition des réponses (Réponses vs Non-réponses)
-    df_6m['has_response'] = df_6m['response'].notna()
-    responses = df_6m['has_response'].value_counts(normalize=True) * 100  # Ratio de réponses
-    responses_fig = px.pie(values=responses, names=['Réponses', 'Non-réponses'], title="Répartition des Réponses aux Avis")
-    responses_fig.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
-    st.plotly_chart(responses_fig, use_container_width=True)
+    # **Graphique 3 : Ratio de Réponses par Mois**
+    with col1:
+        df_responses = df_6m.groupby(df_6m['review_date'].dt.to_period('M')).agg(
+            total_reviews=('rating', 'count'),
+            total_responses=('has_response', 'sum')
+        ).reset_index()
 
-    # Graphique du ratio de réponses mensuel
-    df_responses = df_6m.groupby(df_6m['review_date'].dt.to_period('M')).agg(
-        total_reviews=('rating', 'count'),
-        total_responses=('has_response', 'sum')
-    ).reset_index()
+        df_responses['response_ratio'] = df_responses['total_responses'] / df_responses['total_reviews'] * 100
+        df_responses['review_date'] = df_responses['review_date'].astype(str)
 
-    df_responses['response_ratio'] = df_responses['total_responses'] / df_responses['total_reviews'] * 100
-    df_responses['review_date'] = df_responses['review_date'].astype(str)
+        fig_response = px.bar(df_responses, x='review_date', y='response_ratio', title="Ratio de Réponses aux Avis par Mois", labels={'response_ratio': '% Réponses'}, text='response_ratio')
+        fig_response.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_response.update_xaxes(title="Mois")
+        fig_response.update_yaxes(title="Pourcentage de Réponses (%)")
+        fig_response.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
 
-    fig_response = px.bar(df_responses, x='review_date', y='response_ratio', title="Ratio de Réponses aux Avis par Mois", labels={'response_ratio': '% Réponses'}, text='response_ratio')
-    fig_response.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-    fig_response.update_xaxes(title="Mois")
-    fig_response.update_yaxes(title="Pourcentage de Réponses (%)")
-    fig_response.update_layout(title_x=0.5, title_font_size=20, title_font_color="#004D40")
-
-    st.plotly_chart(fig_response, use_container_width=True)
+        st.plotly_chart(fig_response, use_container_width=True)
 
 if __name__ == "__main__":
     show_dashboard()
