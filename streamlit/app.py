@@ -127,15 +127,30 @@ def show_simulator():
     model = load_model()
     df, trust_scores = load_data()
 
-    selected_company = st.sidebar.selectbox("🏢 Entreprise à simuler", list(trust_scores.keys()))
+    # Sidebar filter for company selection
+    companies = list(trust_scores.keys())
+    selected_company = st.sidebar.selectbox("🏢 Sélectionnez une entreprise à simuler", companies)
+    df = df[df['company'] == selected_company] if 'company' in df.columns else df  # Apply the filter
+
+    # Display the selected company's trust score gauge
     trust_score = trust_scores.get(selected_company, 0.0)
     st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
 
+    # Review text area
     review = st.text_area("📝 Entrez votre review :")
+    
+    # If review is provided, make a prediction and show the WordCloud
     if st.button("🔍 Analyser"):
         if review and model:
             prediction = model.predict([review])[0]
             st.metric("⭐ Note prédite", prediction)
+            
+            # Generate WordCloud from the user's review
+            wordcloud = WordCloud(background_color='white').generate(review)
+            fig, ax = plt.subplots()
+            ax.imshow(wordcloud)
+            ax.axis('off')
+            st.pyplot(fig)
 
 # Fonction principale
 def main():
