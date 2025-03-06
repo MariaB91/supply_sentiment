@@ -1,97 +1,68 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
+import plotly.express as px
 
-# Configuration de la page
+# Configuration de la page Streamlit
 st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
 
 @st.cache_data
 def load_data():
-    try:
-        df = pd.read_json('beautifulsoup/merged_data.json')
+    """Charge les données depuis le fichier JSON"""
+    df = pd.read_json("prediction/dashboard_data.json")
+    return df
 
-        # Conversion des dates
-        df["review_date"] = pd.to_datetime(df["review_date"], errors='coerce')
-        df["scrap_date"] = pd.to_datetime(df["scrap_date"], errors='coerce')
+# Charger les données
+df = load_data()
 
-        # Extraction de la vraie date d'expérience
-        df["experience_date"] = df["experience_date"].str.extract(r'(\d{2} \w+ \d{4})')[0]
-        df["experience_date"] = pd.to_datetime(df["experience_date"], format="%d %B %Y", errors='coerce')
+# Vérifier si le DataFrame est vide
+if df.empty:
+    st.error("Le fichier JSON est vide ou n'a pas pu être chargé.")
+    st.stop()
 
-        # Calcul des différences de jours
-        df["diff_experience_review"] = (df["review_date"] - df["experience_date"]).dt.days
-        df["diff_review_response"] = (pd.to_datetime(df["response_date"], errors='coerce') - df["review_date"]).dt.days
+# ✅ Ajouter un filtre par marque dans la sidebar
+marque_selectionnee = st.sidebar.selectbox(
+    "Sélectionner une marque :", 
+    options=df["marque"].unique(),
+    index=0
+)
 
-        return df
+# Filtrer les données selon la marque sélectionnée
+df_filtered = df[df["marque"] == marque_selectionnee]
 
-    except Exception as e:
-        st.error(f"Erreur lors du chargement des données : {e}")
-        return pd.DataFrame()
+st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
 
-def show_dashboard():
-    st.title("📊 Dashboard d'Analyse des Avis Clients")
+# Afficher un résumé des données filtrées
+st.subheader("📋 Informations générales")
+col1, col2, col3 = st.columns(3)
+col1.metric("Nombre total d'avis", df_filtered.shape[0])
+col2.metric("Trust Score Moyen", round(df_filtered["trust_score"].mean(), 2))
+col3.metric("Note Moyenne", round(df_filtered["rating"].mean(), 2))
 
-    # Charger les données
-    df = load_data()
-    if df.empty:
-        st.warning("Aucune donnée disponible.")
-        return
+# 📌 **Distribution des avis par note (rating)**
+st.subheader("📊 Distribution des Avis par Note")
+fig_rating = px.histogram(
+    df_filtered, x="rating", nbins=5, labels={"rating": "Note"},
+    title="Répartition des Avis Clients", color_discrete_sequence=["#636EFA"]
+)
+st.plotly_chart(fig_rating, use_container_width=True)
 
-    # Filtrage par entreprise
-    companies = df["company_name"].unique()
-    selected_company = st.sidebar.selectbox("Sélectionnez une entreprise", options=companies)
+# 📌 **Évolution des avis dans le temps**
+st.subheader("📅 Évolution des Avis au Fil du Temps")
+df_filtered["review_date"] = pd.to_datetime(df_filtered["review_date"], errors="coerce")
+df_time_series = df_filtered.groupby("review_date").size().reset_index(name="Nombre d'avis")
 
-    df_filtered = df[df["company_name"] == selected_company]
+fig_time_series = px.line(
+    df_time_series, x="review_date", y="Nombre d'avis", markers=True,
+    title="Tendance des Avis Clients",
+    color_discrete_sequence=["#EF553B"]
+)
+st.plotly_chart(fig_time_series, use_container_width=True)
 
-    # Indicateurs Clés
-    col1, col2, col3 = st.columns(3)
-    col1.metric("📅 Nombre total d'avis", len(df_filtered))
-    col2.metric("⭐ Note Moyenne", round(df_filtered["rating"].mean(), 2))
-    col3.metric("⏳ Délai Moyen Expérience -> Avis", f"{df_filtered['diff_experience_review'].mean():.1f} jours")
-
-    # Graphique de répartition des avis par note
-    st.subheader("⭐ Répartition des Avis par Note")
-    reviews_by_rating = df_filtered.groupby("rating").size()
-
-    if not reviews_by_rating.empty:
-        fig, ax = plt.subplots()
-        ax.pie(reviews_by_rating, labels=reviews_by_rating.index, autopct='%1.1f%%',
-               startangle=140, colors=sns.color_palette('Blues', len(reviews_by_rating)))
-        ax.set_title("Distribution des Avis par Note")
-        st.pyplot(fig)
-    else:
-        st.warning("Aucune donnée d'avis pour cette entreprise.")
-
-    # Distribution du délai entre l'expérience et l'avis
-    st.subheader("⏳ Délai entre l'Expérience et l'Avis")
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.histplot(df_filtered["diff_experience_review"].dropna(), bins=10, kde=True, color="blue", ax=ax)
-    ax.set_title("Distribution du Temps entre l'Expérience et l'Avis", fontsize=16)
-    ax.set_xlabel("Jours", fontsize=14)
-    ax.set_ylabel("Nombre d'Avis", fontsize=14)
-    st.pyplot(fig)
-
-    # Analyse des réponses entreprises
-    st.subheader("📢 Réponses aux Avis")
-    response_counts = df_filtered["response"].notna().value_counts()
-
-    fig, ax = plt.subplots()
-    ax.pie(response_counts, labels=["Sans réponse", "Répondu"], autopct='%1.1f%%',
-           startangle=140, colors=["gray", "green"])
-    ax.set_title("Répartition des Avis avec/sans Réponse")
-    st.pyplot(fig)
-
-    if df_filtered["diff_review_response"].notna().sum() > 0:
-        st.subheader("⏳ Temps de Réponse de l'Entreprise")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.histplot(df_filtered["diff_review_response"].dropna(), bins=10, kde=True, color="red", ax=ax)
-        ax.set_title("Distribution du Temps de Réponse de l'Entreprise", fontsize=16)
-        ax.set_xlabel("Jours", fontsize=14)
-        ax.set_ylabel("Nombre d'Avis", fontsize=14)
-        st.pyplot(fig)
-
-if __name__ == "__main__":
-    show_dashboard()
+# 📌 **Analyse des catégories de réponse (Si disponible)**
+if "cat_response" in df_filtered.columns:
+    st.subheader("📧 Catégories de Réponses des Entreprises")
+    fig_response = px.histogram(
+        df_filtered, x="cat_response", title="Répartition des Réponses",
+        color_discrete_sequence=["#00CC96"]
+    )
+    st.plotly_chart(fig_response, use_container_width=True)
