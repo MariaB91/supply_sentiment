@@ -1,0 +1,7 @@
+{
+  "model_name": "XGBoost",
+  "accuracy": 0.7865576748410535,
+  "training_date": "2025-02-23 16:57:47",
+  "model_path": "models\\final_model",
+  "config_path": "models\\model_config.json"
+}
