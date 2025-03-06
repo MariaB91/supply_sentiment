@@ -69,13 +69,14 @@ def show_dashboard():
 
     col1, col2 = st.columns(2)
 
-    # Évolution des notes par mois
+    # Regrouper les avis par mois pour le comptage des notes
     with col1:
-        df_trend_6m = df_6m.groupby(df_6m['review_date'].dt.to_period('M'))['rating'].mean().reset_index()
-        df_trend_6m['review_date'] = df_trend_6m['review_date'].dt.strftime('%Y-%m')  # Format mois-année
+        df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
+        df_trend_6m = df_6m.groupby('month')['rating'].mean().reset_index()
+        df_trend_6m['month'] = df_trend_6m['month'].dt.strftime('%Y-%m')  # Format Mois-Année
 
-        fig_6m = px.line(df_trend_6m, x='review_date', y='rating', title="Évolution des notes (6 mois)", markers=True,
-                         template="plotly_dark")  # Ajouter un thème sombre pour plus d'impact visuel
+        fig_6m = px.line(df_trend_6m, x='month', y='rating', title="Évolution des notes (6 mois)", markers=True,
+                         template="plotly_dark")  # Thème sombre
         fig_6m.update_xaxes(title="Mois", tickangle=45)
         fig_6m.update_yaxes(title="Note moyenne", range=[1, 5], showgrid=True, gridwidth=1, gridcolor='lightgray')
         fig_6m.update_traces(line=dict(width=3, color='deepskyblue'))  # Améliorer l'aspect de la ligne
@@ -96,15 +97,15 @@ def show_dashboard():
 
     # Nombre de réponses et ratio
     df_6m['has_response'] = df_6m['response'].notna() & df_6m['response'].str.strip().ne('null')
-    df_responses = df_6m.groupby(df_6m['review_date'].dt.to_period('M')).agg(
+    df_responses = df_6m.groupby('month').agg(
         total_reviews=('rating', 'count'),
         total_responses=('has_response', 'sum')
     ).reset_index()
 
     df_responses['response_ratio'] = df_responses['total_responses'] / df_responses['total_reviews'] * 100
-    df_responses['review_date'] = df_responses['review_date'].dt.strftime('%Y-%m')  # Format mois-année
+    df_responses['month'] = df_responses['month'].dt.strftime('%Y-%m')  # Format Mois-Année
 
-    fig_response = px.bar(df_responses, x='review_date', y='response_ratio',
+    fig_response = px.bar(df_responses, x='month', y='response_ratio',
                           title="Ratio de réponses aux avis par mois",
                           labels={'response_ratio': '% Réponses'},
                           text='response_ratio', 
