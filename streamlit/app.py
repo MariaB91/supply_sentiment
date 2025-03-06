@@ -25,12 +25,16 @@ def load_data():
         # Conversion des dates en datetime
         df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
         df['response_date'] = pd.to_datetime(df['response_date'], errors='coerce')
-        
+
         # Création des nouvelles colonnes pour regroupement
-        df['review_month'] = df['review_date'].dt.to_period('M')
-        df['review_week'] = df['review_date'].dt.to_period('W')
-        df['response_month'] = df['response_date'].dt.to_period('M')
-        df['response_week'] = df['response_date'].dt.to_period('W')
+        df['review_month'] = df['review_date'].dt.to_period('M')  # Regrouper par mois
+        df['review_week'] = df['review_date'].dt.to_period('W')   # Regrouper par semaine
+        df['response_month'] = df['response_date'].dt.to_period('M')  # Regrouper par mois
+        df['response_week'] = df['response_date'].dt.to_period('W')   # Regrouper par semaine
+
+        # Vérification des nouvelles colonnes
+        st.write("Colonnes disponibles dans le DataFrame :")
+        st.write(df.columns)
 
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
@@ -73,12 +77,16 @@ def show_dashboard():
     with col2:
         st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
 
+    # Vérification des premières lignes du DataFrame après la transformation des dates
+    st.write("Aperçu des données après transformation des dates :")
+    st.write(df.head())
+
     # Groupe des avis par mois
     df_monthly_reviews = df.groupby('review_month').size().reset_index(name='reviews_count')
-    
+
     # Groupe des réponses par mois
     df_monthly_responses = df[df['response_date'].notna()].groupby('response_month').size().reset_index(name='responses_count')
-    
+
     # Merge des deux DataFrames
     df_reviews_responses = pd.merge(df_monthly_reviews, df_monthly_responses, how='left', on='review_month')
     df_reviews_responses['responses_count'].fillna(0, inplace=True)  # Remplir les NaN par 0
