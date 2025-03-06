@@ -30,10 +30,17 @@ def load_data():
         # Convertir les données en DataFrame
         df = pd.DataFrame(reviews_data)
 
-        # Vérifier et convertir les dates si la colonne 'date' existe
-        if 'review_date' in df.columns:
-            df['review_date'] = pd.to_datetime(df['date'], errors='coerce')
+        # Afficher les colonnes pour débogage
+        st.write("Colonnes du DataFrame:", df.columns)
 
+        # Vérifier et convertir les dates si la colonne 'review_date' existe
+        if 'review_date' in df.columns:
+            df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
+        elif 'date' in df.columns:  # Si la colonne s'appelle 'date' au lieu de 'review_date'
+            df['review_date'] = pd.to_datetime(df['date'], errors='coerce')
+        else:
+            st.warning("Aucune colonne de date trouvée.")
+        
         # Charger les scores de confiance des entreprises
         trust_scores = {
             item['company']: float(item.get('trust_score', "0").replace(',', '.'))
