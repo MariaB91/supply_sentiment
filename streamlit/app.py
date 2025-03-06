@@ -30,7 +30,12 @@ def load_data():
         # Chargement du trust score
         with open('beautifulsoup/filtered_list.json', 'r', encoding='utf-8') as f:
             trust_data = json.load(f)
-            trust_score = trust_data.get('trust_score', 0.0)
+
+        # Vérification et extraction du trust_score
+        if isinstance(trust_data, list) and len(trust_data) > 0:
+            trust_score = float(trust_data[0].get('trust_score', "0").replace(',', '.'))
+        else:
+            trust_score = 0.0  # Valeur par défaut si le fichier est vide ou mal formaté
         
         # Conversion en DataFrame
         df = pd.DataFrame(reviews_data)
