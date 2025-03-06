@@ -20,7 +20,8 @@ def load_data():
 
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
-            df['review_date'] = pd.to_datetime(df['review_date'], format='%d-%m-%Y', errors='coerce')  # Conversion en datetime
+            # Assurer la conversion correcte du format de date
+            df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')  # Convertir en datetime
         return df, trust_scores, marque_to_company
     except FileNotFoundError as e:
         st.error(f"Erreur de chargement des fichiers: {str(e)}")
@@ -67,12 +68,13 @@ def show_dashboard():
 
     df_6m = df[df['review_date'] >= start_6m]
 
-    # Regroupement des avis par mois
+    # Ajouter une colonne pour savoir s'il y a une réponse ou non
+    df_6m['has_response'] = df_6m['response'].notna()
+
+    # Regrouper les avis par mois
     df_6m['month'] = df_6m['review_date'].dt.to_period('M')  # Extraire l'année et le mois
 
     # Répartition globale des réponses et non-réponses
-    df_6m['has_response'] = df_6m['response'].notna()  # Création d'une colonne 'has_response' (True si réponse)
-
     responses_count = df_6m['has_response'].sum()
     no_responses_count = len(df_6m) - responses_count
 
