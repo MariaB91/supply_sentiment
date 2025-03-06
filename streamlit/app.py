@@ -32,7 +32,7 @@ def load_data():
         df['response_week'] = df['response_date'].dt.to_period('W')   # Regrouper par semaine
 
         # Vérification des nouvelles colonnes
-        st.write("Colonnes disponibles dans le DataFrame :")
+        st.write("Colonnes disponibles dans le DataFrame après transformation des dates :")
         st.write(df.columns)
 
         return df, trust_scores, marque_to_company
@@ -96,41 +96,32 @@ def show_dashboard():
     st.write(df_monthly_responses.head())
 
     # Merge des deux DataFrames
-    df_reviews_responses = pd.merge(df_monthly_reviews, df_monthly_responses, how='left', on='review_month')
-    df_reviews_responses['responses_count'].fillna(0, inplace=True)  # Remplir les NaN par 0
-    
-    col1, col2 = st.columns(2)
-    
-    # Évolution des avis par mois
-    with col1:
-        fig_reviews = px.line(df_reviews_responses, x='review_month', y='reviews_count', title="Évolution des Avis par Mois", markers=True)
-        fig_reviews.update_xaxes(title="Mois")
-        fig_reviews.update_yaxes(title="Nombre d'Avis")
-        st.plotly_chart(fig_reviews, use_container_width=True)
-    
-    # Répartition des réponses par mois
-    with col2:
-        fig_responses = px.bar(df_reviews_responses, x='review_month', y='responses_count', title="Réponses aux Avis par Mois", labels={'responses_count': 'Nombre de Réponses'})
-        fig_responses.update_xaxes(title="Mois")
-        fig_responses.update_yaxes(title="Nombre de Réponses")
-        st.plotly_chart(fig_responses, use_container_width=True)
+    try:
+        df_reviews_responses = pd.merge(df_monthly_reviews, df_monthly_responses, how='left', on='review_month')
+        df_reviews_responses['responses_count'].fillna(0, inplace=True)  # Remplir les NaN par 0
+        
+        col1, col2 = st.columns(2)
+        
+        # Évolution des avis par mois
+        with col1:
+            fig_reviews = px.line(df_reviews_responses, x='review_month', y='reviews_count', title="Évolution des Avis par Mois", markers=True)
+            fig_reviews.update_xaxes(title="Mois")
+            fig_reviews.update_yaxes(title="Nombre d'Avis")
+            st.plotly_chart(fig_reviews, use_container_width=True)
+        
+        # Répartition des réponses par mois
+        with col2:
+            fig_responses = px.bar(df_reviews_responses, x='review_month', y='responses_count', title="Réponses aux Avis par Mois", labels={'responses_count': 'Nombre de Réponses'})
+            fig_responses.update_xaxes(title="Mois")
+            fig_responses.update_yaxes(title="Nombre de Réponses")
+            st.plotly_chart(fig_responses, use_container_width=True)
 
-    # Graphique de distribution des notes par semaine
-    df_weekly_reviews = df.groupby('review_week')['rating'].mean().reset_index(name='average_rating')
-
-    col1, col2 = st.columns(2)
-    with col1:
-        fig_rating_weekly = px.line(df_weekly_reviews, x='review_week', y='average_rating', title="Évolution des Notes Moyennes par Semaine", markers=True)
-        fig_rating_weekly.update_xaxes(title="Semaine")
-        fig_rating_weekly.update_yaxes(title="Note Moyenne")
-        st.plotly_chart(fig_rating_weekly, use_container_width=True)
-
-    # Distribution des notes sur toutes les périodes
-    with col2:
-        fig_rating_dist = px.histogram(df, x='rating', nbins=5, title="Distribution des Notes", labels={'rating': 'Notes'})
-        fig_rating_dist.update_xaxes(title="Notes (1-5)")
-        fig_rating_dist.update_yaxes(title="Nombre d'Avis")
-        st.plotly_chart(fig_rating_dist, use_container_width=True)
+    except KeyError as e:
+        st.error(f"Erreur lors de la fusion des données : {str(e)}")
+        st.write("Colonnes disponibles dans df_monthly_reviews :")
+        st.write(df_monthly_reviews.columns)
+        st.write("Colonnes disponibles dans df_monthly_responses :")
+        st.write(df_monthly_responses.columns)
 
 if __name__ == "__main__":
     show_dashboard()
