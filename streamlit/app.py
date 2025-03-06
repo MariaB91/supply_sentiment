@@ -89,11 +89,11 @@ def show_dashboard():
     # Répartition des réponses par mois
     df_responses_by_month = df_6m.groupby(['month', 'has_response']).size().unstack(fill_value=0)
     
-    # Création des variables pour les réponses et non-réponses
-    df_responses_by_month['Réponses'] = df_responses_by_month[True]
-    df_responses_by_month['Non-réponses'] = df_responses_by_month[False]
+    # Ajouter des colonnes 'Réponses' et 'Non-réponses' explicitement
+    df_responses_by_month['Réponses'] = df_responses_by_month[True]  # Réponses
+    df_responses_by_month['Non-réponses'] = df_responses_by_month[False]  # Non-réponses
 
-    # Visualisation par mois
+    # Création du graphique pour chaque mois avec pie chart
     fig_pie_month = go.Figure()
 
     # Ajouter une trace pour chaque mois
