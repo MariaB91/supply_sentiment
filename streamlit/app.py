@@ -11,7 +11,7 @@ st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layo
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_json('merged_data.json')
+        df = pd.read_json('beautifulsoup/merged_data.json')
 
         # Conversion des dates
         df["review_date"] = pd.to_datetime(df["review_date"], errors='coerce')
