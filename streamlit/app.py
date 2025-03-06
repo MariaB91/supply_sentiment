@@ -79,6 +79,7 @@ def show_dashboard():
     # Graphique de l'évolution des notes par mois
     with col1:
         df['month'] = df['review_date'].dt.to_period('M')  # Groupement par mois
+        df['month'] = df['month'].astype(str)  # Conversion de Period en str
         df_monthly = df.groupby('month')['rating'].mean().reset_index()
 
         fig_6m = px.line(df_monthly, x='month', y='rating', title="Évolution des Notes Moyennes par Mois", markers=True)
@@ -90,6 +91,7 @@ def show_dashboard():
     # Graphique de la répartition des notes par semaine
     with col2:
         df['week'] = df['review_date'].dt.to_period('W')  # Groupement par semaine
+        df['week'] = df['week'].astype(str)  # Conversion de Period en str
         df_weekly = df.groupby('week')['rating'].value_counts().unstack(fill_value=0).stack().reset_index(name='count')
 
         fig_weekly = px.bar(df_weekly, x='week', y='count', color='rating', title="Répartition des Notes par Semaine", labels={'count': 'Nombre d\'Avis'})
