@@ -27,7 +27,7 @@ def load_data():
         
         # Création du mapping marque -> company_name
         marque_to_company = {item['marque']: item['liens_marque'] for item in trust_data if isinstance(item, dict)}
-        trust_scores = {item['liens_marque']: float(item.get('trust_score', 0.0)) for item in trust_data if isinstance(item, dict)}
+        trust_scores = {item['liens_marque']: float(item.get('trust_score', '0').replace(',', '.')) for item in trust_data if isinstance(item, dict)}
 
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
@@ -78,32 +78,27 @@ def show_dashboard():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
-    
-    # Filtres de période
+
+    # Filtrage par période
     today = datetime.now()
     start_6m = today - timedelta(days=180)
     start_1w = today - timedelta(days=7)
     
     df_6m = df[df['review_date'] >= start_6m]
     df_1w = df[df['review_date'] >= start_1w]
-    
-    # Évolution des notes (6 mois & semaine)
+
+    # Évolution des notes (6 mois & 1 semaine)
     col1, col2 = st.columns(2)
-    
+
     with col1:
         df_trend_6m = df_6m.groupby(pd.Grouper(key='review_date', freq='M'))['rating'].mean().reset_index()
-        fig_6m = px.line(df_trend_6m, x='review_date', y='rating', title="Évolution des notes (6 mois)")
+        fig_6m = px.line(df_trend_6m, x='review_date', y='rating', title="Évolution des notes (6 mois)", markers=True)
         st.plotly_chart(fig_6m, use_container_width=True)
-    
+
     with col2:
-        df_trend_1w = df_1w.groupby(pd.Grouper(key='review_date', freq='W'))['rating'].mean().reset_index()
-        fig_1w = px.line(df_trend_1w, x='review_date', y='rating', title="Évolution des notes (par semaine)")
+        df_trend_1w = df_1w.groupby(pd.Grouper(key='review_date', freq='D'))['rating'].mean().reset_index()
+        fig_1w = px.line(df_trend_1w, x='review_date', y='rating', title="Évolution des notes (1 semaine)", markers=True)
         st.plotly_chart(fig_1w, use_container_width=True)
 
-def main():
-    page = st.sidebar.radio("Navigation", ["Dashboard"])
-    if page == "Dashboard":
-        show_dashboard()
-
-if __name__ == "__main__":  
-    main()
+if __name__ == "__main__":
+    show_dashboard()
