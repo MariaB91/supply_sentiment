@@ -49,7 +49,7 @@ def load_data():
 def load_model():
     """Charge le modèle de prédiction"""
     try:
-        model_path = "models/final_model"
+        model_path = "Prediction/models/final_model"
         return mlflow.sklearn.load_model(model_path)
     except Exception as e:
         st.error(f"Erreur de chargement du modèle: {str(e)}")
