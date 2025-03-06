@@ -26,7 +26,7 @@ def load_data():
             trust_data = json.load(f)
         
         # Vérification de la structure des données
-        trust_scores = {item['company']: item.get('trust_score', 0.0) for item in trust_data if isinstance(item, dict)}
+        trust_scores = {item['marque']: item.get('trust_score', 0.0) for item in trust_data if isinstance(item, dict)}
         
         df = pd.DataFrame(reviews_data)
         if 'review_date' in df.columns:
@@ -66,10 +66,10 @@ def show_dashboard():
         st.warning("Aucune donnée disponible.")
         return
     
-    # Sélection de l'entreprise
-    company = st.sidebar.selectbox("Sélectionner une entreprise", options=list(trust_scores.keys()))
-    df = df[df['company'] == company]
-    trust_score = trust_scores.get(company, 0.0)
+    # Sélection de la marque
+    marque = st.sidebar.selectbox("Sélectionner une marque", options=list(trust_scores.keys()))
+    df = df[df['marque'] == marque]
+    trust_score = trust_scores.get(marque, 0.0)
     
     # Affichage du trust score
     col1, col2, col3 = st.columns([1, 2, 1])
