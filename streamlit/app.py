@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import json
-import requests
+import requests  # Utilisé pour appeler l'API
 
 # URL de l'API déployée sur Render
 API_URL = "https://ton-api-render.onrender.com/predict"  # Remplace par l'URL de ton API
@@ -36,14 +36,14 @@ trust_score = trust_scores.get(marque_selectionnee, 0.0)
 total_reviews = reviews_count.get(marque_selectionnee, 0)
 
 # Fonction de jauge Trust Score
-def create_trust_jauge(trust_score):
+def create_trust_gauge(trust_score):
     import plotly.graph_objects as go
     fig = go.Figure(go.Indicator(
-        mode="jauge+number",
+        mode="gauge+number",
         value=trust_score,
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Trust Score", 'font': {'size': 24}},
-        jauge={
+        gauge={
             'axis': {'range': [0, 5]},
             'bar': {'color': "darkblue"},
             'steps': [
@@ -64,7 +64,7 @@ col2.metric("Trust Score", round(trust_score, 2))
 col3.metric("Note Moyenne", round(df_filtered["rating"].mean(), 2))
 
 st.subheader("🔹 Trust Score")
-st.plotly_chart(create_trust_jauge(trust_score), use_container_width=True)
+st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
 
 st.subheader("📊 Distribution des Avis par Note")
 fig_rating = px.histogram(df_filtered, x="rating", nbins=5, labels={"rating": "Note"},
