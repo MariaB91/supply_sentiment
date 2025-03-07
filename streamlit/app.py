@@ -1,12 +1,8 @@
 import streamlit as st
-import mlflow
-import mlflow.pyfunc
+import requests
 import pandas as pd
 import plotly.express as px
 import json
-
-# Configuration de l'URI du Tracking Server MLflow
-mlflow.set_tracking_uri('http://localhost:5000')  # Remplacez par l'URL de votre serveur MLflow
 
 # Charger les données
 @st.cache_data
@@ -32,21 +28,22 @@ def load_trust_data():
 
     return trust_scores, reviews_count
 
-# Charger le modèle MLflow
-def load_model():
-    model_uri = 'runs:/4a104d66b7ec4b9ea4c06064f3d275e9/final_model'  # Remplacez par l'URI de votre modèle
-    model = mlflow.pyfunc.load_model(model_uri)
-    return model
+# Fonction pour prédire avec l'API
+def predict_with_api(commentaire):
+    api_url = "http://localhost:8000/predict/"  # URL de votre API FastAPI
+    payload = {"texte": commentaire}
+    response = requests.post(api_url, json=payload)
+    
+    if response.status_code == 200:
+        prediction = response.json()
+        return prediction['predicted_rating']
+    else:
+        st.error("Erreur lors de la prédiction. Vérifiez votre API.")
+        return None
 
-# Fonction pour prédire avec le modèle MLflow
-def predict(model, commentaire):
-    prediction = model.predict([commentaire])
-    return prediction[0]
-
-# Charger les données et le modèle
+# Charger les données
 df = load_data()
 trust_scores, reviews_count = load_trust_data()
-model = load_model()
 
 # Vérifier si le DataFrame est vide
 if df.empty:
@@ -74,7 +71,7 @@ def create_trust_gauge(trust_score):
         mode="gauge+number",
         value=trust_score,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Trust Score", 'font': {'size': 24}},
+        title={'text': "Trust Score", 'font': {'size': 24}} ,
         gauge={
             'axis': {'range': [0, 5]},
             'bar': {'color': "darkblue"},
@@ -130,5 +127,6 @@ commentaire = st.text_area("Entrez votre commentaire ici")
 
 if commentaire:
     # Prédire la note à partir du commentaire
-    predicted_rating = predict(model, commentaire)
-    st.write(f"Note prédite : {predicted_rating}")
+    predicted_rating = predict_with_api(commentaire)
+    if predicted_rating is not None:
+        st.write(f"Note prédite : {predicted_rating}")
