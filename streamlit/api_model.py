@@ -1,31 +1,34 @@
-import mlflow
+import os
 import mlflow.pyfunc
+import json
 from flask import Flask, request, jsonify
 
-# Créez une instance de l'application Flask
 app = Flask(__name__)
 
 # Charger le modèle MLflow
-mlflow.set_tracking_uri('http://localhost:5000')  # Assurez-vous que MLflow est configuré correctement
-model_uri = 'runs:/4a104d66b7ec4b9ea4c06064f3d275e9/final_model'  # URI de votre modèle
-model = mlflow.pyfunc.load_model(model_uri)
+MODEL_URI = "runs:/4a104d66b7ec4b9ea4c06064f3d275e9/final_model"  # Remplace avec le bon URI
+model = mlflow.pyfunc.load_model(MODEL_URI)
 
-# Définir un endpoint pour la prédiction
-@app.route('/predict', methods=['POST'])
+@app.route("/")
+def home():
+    return "L'API de prédiction fonctionne !"
+
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Récupérer le commentaire envoyé dans la requête JSON
         data = request.get_json()
-        commentaire = data['commentaire']
+        commentaire = data.get("commentaire", "")
 
-        # Effectuer la prédiction
+        if not commentaire:
+            return jsonify({"error": "Aucun commentaire fourni"}), 400
+        
+        # Prédiction
         prediction = model.predict([commentaire])
+        return jsonify({"prediction": prediction[0]})
 
-        # Retourner la prédiction dans la réponse
-        return jsonify({'prediction': prediction[0]})
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
-# Démarrer l'API Flask
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)  # L'API sera accessible sur http://localhost:5001
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Render attribue un port dynamique
+    app.run(host="0.0.0.0", port=port)
