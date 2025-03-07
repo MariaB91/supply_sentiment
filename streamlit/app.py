@@ -10,18 +10,11 @@ def load_trust_data():
         with open("beautifulsoup/filtered_list.json", "r", encoding="utf-8") as f:
             trust_data = json.load(f)
         
-        # Vérifier que trust_data contient des données
         if not trust_data:
             st.error("Le fichier 'filtered_list.json' est vide ou mal formaté.")
             return {}, {}, {}
 
-        # Affichage pour vérifier le contenu de trust_data
-        # st.write(trust_data)
-        
-        # Convertir les données en dictionnaires
         df_trust = pd.DataFrame(trust_data)
-        
-        # Créer des dictionnaires pour les scores de confiance et les avis
         trust_scores = {
             item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data
         }
@@ -58,7 +51,7 @@ trust_scores, reviews_count, links = load_trust_data()
 
 # Vérifier si les données de confiance sont valides
 if not trust_scores:
-    st.stop()  # Arrêter l'exécution si les données sont invalides
+    st.stop()
 
 # Charger les données de l'API
 df = load_data()
