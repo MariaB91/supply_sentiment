@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.express as px
 import json
 
-# Configuration de la page Streamlit
-st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
+# Configuration de l'URI du Tracking Server MLflow
+mlflow.set_tracking_uri('http://localhost:5000')  # Remplacez par l'URL de votre serveur MLflow
 
 # Charger les données
 @st.cache_data
