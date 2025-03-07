@@ -1,4 +1,6 @@
 import streamlit as st
+import mlflow
+import mlflow.pyfunc
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -19,13 +21,8 @@ def load_trust_data():
     with open("beautifulsoup/filtered_list.json", "r", encoding="utf-8") as f:
         trust_data = json.load(f)
 
-    # Convertir en DataFrame pour un accès plus facile
     df_trust = pd.DataFrame(trust_data)
-
-    # Créer un dictionnaire {marque: trust_score}
     trust_scores = {item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data}
-
-    # Créer un dictionnaire {marque: nombre de reviews}
     reviews_count = {item["marque"]: int(item.get("reviews", 0)) for item in trust_data}
 
     return trust_scores, reviews_count
@@ -64,15 +61,32 @@ def create_trust_gauge(trust_score):
             'axis': {'range': [0, 5]},
             'bar': {'color': "darkblue"},
             'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},  # Rouge (mauvais)
-                {'range': [2, 4], 'color': '#FFA500'},  # Orange (moyen)
-                {'range': [4, 5], 'color': '#04AA6D'}   # Vert (bon)
+                {'range': [0, 2], 'color': '#FF4B4B'},
+                {'range': [2, 4], 'color': '#FFA500'},
+                {'range': [4, 5], 'color': '#04AA6D'}
             ]
         }
     ))
     fig.update_layout(height=300)
     return fig
 
+# 📌 **Charger le modèle depuis MLflow**
+def load_mlflow_model():
+    # Remplacez l'URL et l'URI par votre propre modèle MLflow
+    model_uri = "mlflow-artifacts:/703686963448022104/4a104d66b7ec4b9ea4c06064f3d275e9/artifacts/final_model/model.pkl"
+    model = mlflow.pyfunc.load_model(model_uri)
+    return model
+
+# Charger le modèle
+model = load_mlflow_model()
+
+# Fonction de prédiction
+def predict_rating(commentaire):
+    # Effectuer la prédiction
+    prediction = model.predict([commentaire])
+    return prediction[0]  # Retourner la première prédiction (car on envoie une liste)
+
+# Titre du Dashboard
 st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
 
 # 📋 **Résumé des statistiques**
@@ -105,3 +119,14 @@ fig_time_series = px.line(
     color_discrete_sequence=["#EF553B"]
 )
 st.plotly_chart(fig_time_series, use_container_width=True)
+
+# --- Page de simulation (prédiction à partir du commentaire) ---
+st.sidebar.subheader("💬 Simulation de Prédiction")
+
+# Formulaire pour entrer un commentaire
+commentaire = st.text_area("Entrez un commentaire pour prédire la note :")
+
+# Prédiction quand l'utilisateur soumet le commentaire
+if commentaire:
+    rating_predicted = predict_rating(commentaire)
+    st.subheader(f"Rating prédit pour ce commentaire : {rating_predicted:.2f}")
