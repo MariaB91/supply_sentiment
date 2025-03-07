@@ -5,7 +5,7 @@ import json
 import requests  # Utilisé pour appeler l'API
 
 # URL de l'API déployée sur Render
-API_URL = "https://ton-api-render.onrender.com/predict"  # Remplace par l'URL de ton API
+API_URL = "https://supply-sentiment.onrender.com"
 
 # Charger les données
 @st.cache_data
