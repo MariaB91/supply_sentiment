@@ -20,7 +20,7 @@ def load_trust_data():
     df_trust = pd.DataFrame(trust_data)
     trust_scores = {item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data}
     reviews_count = {item["marque"]: int(item.get("reviews", 0)) for item in trust_data}
-    company_links = {item["marque"]: item.get("company_url", "#") for item in trust_data}  # Ajouter l'URL de l'entreprise
+    company_links = {item["marque"]: item.get("liens_marque", "#") for item in trust_data}  # Modifier ici pour prendre "liens_marque"
 
     return trust_scores, reviews_count, company_links
 
