@@ -1,132 +1,95 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 import json
+import requests
+
+# URL de l'API déployée sur Render
+API_URL = "https://ton-api-render.onrender.com/predict"  # Remplace par l'URL de ton API
 
 # Charger les données
 @st.cache_data
 def load_data():
-    """Charge les données des avis depuis prediction/dashboard_data.json"""
-    df = pd.read_json("Prediction/dashboard_data.json")
-    return df
+    return pd.read_json("Prediction/dashboard_data.json")
 
 @st.cache_data
 def load_trust_data():
-    """Charge les Trust Scores depuis beautifulsoup/filtered_list.json"""
     with open("beautifulsoup/filtered_list.json", "r", encoding="utf-8") as f:
         trust_data = json.load(f)
-
-    # Convertir en DataFrame pour un accès plus facile
+    
     df_trust = pd.DataFrame(trust_data)
-
-    # Créer un dictionnaire {marque: trust_score}
     trust_scores = {item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data}
-
-    # Créer un dictionnaire {marque: nombre de reviews}
     reviews_count = {item["marque"]: int(item.get("reviews", 0)) for item in trust_data}
 
     return trust_scores, reviews_count
-
-# Fonction pour prédire avec l'API
-def predict_with_api(commentaire):
-    api_url = "http://localhost:8000/predict/"  # URL de votre API FastAPI
-    payload = {"texte": commentaire}
-    response = requests.post(api_url, json=payload)
-    
-    if response.status_code == 200:
-        prediction = response.json()
-        return prediction['predicted_rating']
-    else:
-        st.error("Erreur lors de la prédiction. Vérifiez votre API.")
-        return None
 
 # Charger les données
 df = load_data()
 trust_scores, reviews_count = load_trust_data()
 
-# Vérifier si le DataFrame est vide
-if df.empty:
-    st.error("Le fichier JSON des avis est vide ou n'a pas pu être chargé.")
-    st.stop()
+# Sélection de la marque
+marque_selectionnee = st.sidebar.selectbox("Sélectionner une marque :", options=df["marque"].unique(), index=0)
 
-# ✅ Ajouter un filtre par marque dans la sidebar
-marque_selectionnee = st.sidebar.selectbox(
-    "Sélectionner une marque :", 
-    options=df["marque"].unique(),
-    index=0
-)
-
-# Filtrer les données selon la marque sélectionnée
+# Filtrer les données
 df_filtered = df[df["marque"] == marque_selectionnee]
-
-# Récupérer le Trust Score et le nombre d’avis
 trust_score = trust_scores.get(marque_selectionnee, 0.0)
 total_reviews = reviews_count.get(marque_selectionnee, 0)
 
-# 📌 **Créer une jauge pour le Trust Score**
-def create_trust_gauge(trust_score):
+# Fonction de jauge Trust Score
+def create_trust_jauge(trust_score):
     import plotly.graph_objects as go
     fig = go.Figure(go.Indicator(
-        mode="gauge+number",
+        mode="jauge+number",
         value=trust_score,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Trust Score", 'font': {'size': 24}} ,
-        gauge={
+        title={'text': "Trust Score", 'font': {'size': 24}},
+        jauge={
             'axis': {'range': [0, 5]},
             'bar': {'color': "darkblue"},
             'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},  # Rouge (mauvais)
-                {'range': [2, 4], 'color': '#FFA500'},  # Orange (moyen)
-                {'range': [4, 5], 'color': '#04AA6D'}   # Vert (bon)
+                {'range': [0, 2], 'color': '#FF4B4B'},
+                {'range': [2, 4], 'color': '#FFA500'},
+                {'range': [4, 5], 'color': '#04AA6D'}
             ]
         }
     ))
-    fig.update_layout(height=300)
     return fig
 
-# Affichage du titre et des informations générales
+# Affichage général
 st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
-
-# 📋 **Résumé des statistiques**
 st.subheader("📋 Informations générales")
 col1, col2, col3 = st.columns(3)
 col1.metric("Nombre total d'avis", total_reviews)
 col2.metric("Trust Score", round(trust_score, 2))
 col3.metric("Note Moyenne", round(df_filtered["rating"].mean(), 2))
 
-# 📌 **Affichage de la jauge du Trust Score**
 st.subheader("🔹 Trust Score")
-st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
+st.plotly_chart(create_trust_jauge(trust_score), use_container_width=True)
 
-# 📌 **Distribution des avis par note (rating)**
 st.subheader("📊 Distribution des Avis par Note")
-fig_rating = px.histogram(
-    df_filtered, x="rating", nbins=5, labels={"rating": "Note"},
-    title="Répartition des Avis Clients", color_discrete_sequence=["#636EFA"]
-)
+fig_rating = px.histogram(df_filtered, x="rating", nbins=5, labels={"rating": "Note"},
+                          title="Répartition des Avis Clients", color_discrete_sequence=["#636EFA"])
 st.plotly_chart(fig_rating, use_container_width=True)
 
-# 📌 **Évolution des avis dans le temps**
 st.subheader("📅 Évolution des Avis au Fil du Temps")
 df_filtered["review_date"] = pd.to_datetime(df_filtered["review_date"], errors="coerce")
 df_time_series = df_filtered.groupby("review_date").size().reset_index(name="Nombre d'avis")
 
-fig_time_series = px.line(
-    df_time_series, x="review_date", y="Nombre d'avis", markers=True,
-    title="Tendance des Avis Clients",
-    color_discrete_sequence=["#EF553B"]
-)
+fig_time_series = px.line(df_time_series, x="review_date", y="Nombre d'avis", markers=True,
+                          title="Tendance des Avis Clients", color_discrete_sequence=["#EF553B"])
 st.plotly_chart(fig_time_series, use_container_width=True)
 
-# Section pour la prédiction du rating basé sur le commentaire
+# Prédiction du rating
 st.subheader("📝 Prédiction de la Note à partir d'un Commentaire")
-
-# Entrée du commentaire
 commentaire = st.text_area("Entrez votre commentaire ici")
 
 if commentaire:
-    # Prédire la note à partir du commentaire
-    predicted_rating = predict_with_api(commentaire)
-    if predicted_rating is not None:
-        st.write(f"Note prédite : {predicted_rating}")
+    try:
+        response = requests.post(API_URL, json={"commentaire": commentaire})
+        if response.status_code == 200:
+            predicted_rating = response.json()["prediction"]
+            st.write(f"Note prédite : {predicted_rating}")
+        else:
+            st.error(f"Erreur de l'API : {response.json().get('error', 'Problème inconnu')}")
+    except Exception as e:
+        st.error(f"Erreur lors de la requête à l'API : {e}")
