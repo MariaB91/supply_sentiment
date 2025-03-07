@@ -12,6 +12,9 @@ mlflow==2.20.2
 cloudpickle==3.1.1
 psutil==6.1.1
 scipy==1.15.1
+flask
+gunicorn
+requests
 
 
 
