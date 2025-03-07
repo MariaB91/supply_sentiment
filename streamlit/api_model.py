@@ -1,12 +1,17 @@
 import os
+import mlflow
 import mlflow.pyfunc
 import json
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Charger le modèle MLflow
-MODEL_URI = "runs:/4a104d66b7ec4b9ea4c06064f3d275e9/final_model"  # Remplace avec le bon URI
+# Assurez-vous que l'URI de suivi MLflow est correctement configuré
+# Remplacez l'URL ci-dessous par l'URL de votre serveur MLflow
+mlflow.set_tracking_uri("http://localhost:5000")  # Utilisez l'URL de votre serveur MLflow ici
+
+# Charger le modèle à partir de l'URI mlflow-artifacts
+MODEL_URI = "mlflow-artifacts:/703686963448022104/4a104d66b7ec4b9ea4c06064f3d275e9/artifacts/final_model/MLmodel"
 model = mlflow.pyfunc.load_model(MODEL_URI)
 
 @app.route("/")
