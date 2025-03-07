@@ -1,17 +1,7 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 import json
-import requests
 
-# URL de l'API déployée sur Render
-API_URL = "https://supply-sentiment.onrender.com"
-
-# Charger les données
-@st.cache_data
-def load_data():
-    return pd.read_json("Prediction/dashboard_data.json")
-
+# Charger les données de la marque (nom, lien, etc.)
 @st.cache_data
 def load_trust_data():
     with open("beautifulsoup/filtered_list.json", "r", encoding="utf-8") as f:
@@ -20,89 +10,42 @@ def load_trust_data():
     df_trust = pd.DataFrame(trust_data)
     trust_scores = {item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data}
     reviews_count = {item["marque"]: int(item.get("reviews", 0)) for item in trust_data}
-    company_links = {item["marque"]: item.get("liens_marque", "#") for item in trust_data}  # Modifier ici pour prendre "liens_marque"
+    links = {item["marque"]: item.get("liens_marque", "#") for item in trust_data}
 
-    return trust_scores, reviews_count, company_links
+    return trust_scores, reviews_count, links
 
 # Charger les données
-df = load_data()
-trust_scores, reviews_count, company_links = load_trust_data()
+trust_scores, reviews_count, links = load_trust_data()
 
-# Sidebar : Sélection de la marque
-marque_selectionnee = st.sidebar.selectbox("Sélectionner une marque :", options=df["marque"].unique(), index=0)
+# Sélection de la marque dans la sidebar
+marque_selectionnee = st.sidebar.selectbox("Sélectionner une marque :", options=list(links.keys()), index=0)
 
-# Filtrer les données
-df_filtered = df[df["marque"] == marque_selectionnee]
-trust_score = trust_scores.get(marque_selectionnee, 0.0)
-total_reviews = reviews_count.get(marque_selectionnee, 0)
-company_url = company_links.get(marque_selectionnee, "#")
+# Liens de la marque
+company_url = links.get(marque_selectionnee, "#")
 
-# Fonction de jauge Trust Score
-def create_trust_gauge(trust_score):
-    import plotly.graph_objects as go
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=trust_score,
-        domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Trust Score", 'font': {'size': 24}},
-        gauge={
-            'axis': {'range': [0, 5]},
-            'bar': {'color': "darkblue"},
-            'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},
-                {'range': [2, 4], 'color': '#FFA500'},
-                {'range': [4, 5], 'color': '#04AA6D'}
-            ]
-        }
-    ))
-    return fig
+# Partie principale de l'app
+st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
 
-# Créer un menu de navigation entre "Dashboard" et "Simulation"
-page = st.sidebar.radio("Choisissez une page", ("Dashboard", "Simulation"))
+# Informations générales (exemple de KPI)
+st.subheader("📋 Informations générales")
+st.write(f"Trust Score : {trust_scores.get(marque_selectionnee, 0)}")
+st.write(f"Nombre total d'avis : {reviews_count.get(marque_selectionnee, 0)}")
 
-# Affichage du Dashboard
-if page == "Dashboard":
-    st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
-    st.subheader("📋 Informations générales")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Nombre total d'avis", total_reviews)
-    col2.metric("Trust Score", round(trust_score, 2))
-    col3.metric("Note Moyenne", round(df_filtered["rating"].mean(), 2))
-
-    st.subheader("🔹 Trust Score")
-    st.plotly_chart(create_trust_gauge(trust_score), use_container_width=True)
-
-    st.subheader("📊 Distribution des Avis par Note")
-    fig_rating = px.histogram(df_filtered, x="rating", nbins=5, labels={"rating": "Note"},
-                              title="Répartition des Avis Clients", color_discrete_sequence=["#636EFA"])
-    st.plotly_chart(fig_rating, use_container_width=True)
-
-    st.subheader("📅 Évolution des Avis au Fil du Temps")
-    df_filtered["review_date"] = pd.to_datetime(df_filtered["review_date"], errors="coerce")
-    df_time_series = df_filtered.groupby("review_date").size().reset_index(name="Nombre d'avis")
-
-    fig_time_series = px.line(df_time_series, x="review_date", y="Nombre d'avis", markers=True,
-                              title="Tendance des Avis Clients", color_discrete_sequence=["#EF553B"])
-    st.plotly_chart(fig_time_series, use_container_width=True)
-
-    # Bouton "Visiter l'entreprise" (lien vers l'entreprise dans la base de données)
+# Affichage du lien vers l'entreprise en bas de la sidebar
+with st.sidebar:
+    st.markdown("----")
     if company_url != "#":
-        st.markdown(f"[Visiter l'entreprise]({company_url})", unsafe_allow_html=True)
+        st.markdown(f"<a href='{company_url}' target='_blank' style='background-color: #04AA6D; color: white; padding: 10px; border-radius: 5px; text-align: center; display: block;'>Visiter l'entreprise</a>", unsafe_allow_html=True)
     else:
-        st.write("Aucun lien d'entreprise disponible pour cette marque.")
+        st.write("Aucun lien disponible pour cette marque.")
+    
+    # Mention "source des reviews" avec le logo Trustpilot
+    st.markdown("----")
+    st.markdown(
+        "<p style='font-size: 14px;'>Source des reviews : <a href='https://www.trustpilot.com/' target='_blank'><img src='https://upload.wikimedia.org/wikipedia/commons/a/a2/Trustpilot_logo_2021.svg' width='100'></a></p>",
+        unsafe_allow_html=True
+    )
 
-# Affichage de la page Simulation
-elif page == "Simulation":
-    st.title(f"📝 Simulation de Prédiction - {marque_selectionnee}")
-    commentaire = st.text_area("Entrez votre commentaire ici")
-
-    if commentaire:
-        try:
-            response = requests.post(API_URL, json={"commentaire": commentaire})
-            if response.status_code == 200:
-                predicted_rating = response.json()["prediction"]
-                st.write(f"Note prédite : {predicted_rating}")
-            else:
-                st.error(f"Erreur de l'API : {response.json().get('error', 'Problème inconnu')}")
-        except Exception as e:
-            st.error(f"Erreur lors de la requête à l'API : {e}")
+# Exemple de graphique ou autre contenu pour la page principale
+st.subheader("🔹 Distribution des Avis")
+# Ajoutez ici d'autres éléments graphiques ou de données, comme la distribution des avis, etc.
