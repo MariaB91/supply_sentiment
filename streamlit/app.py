@@ -3,12 +3,12 @@ import mlflow
 import mlflow.pyfunc
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import json
 
 # Configuration de la page Streamlit
 st.set_page_config(page_title="Analyse des Avis Clients", page_icon="📊", layout="wide")
 
+# Charger les données
 @st.cache_data
 def load_data():
     """Charge les données des avis depuis prediction/dashboard_data.json"""
@@ -21,15 +21,32 @@ def load_trust_data():
     with open("beautifulsoup/filtered_list.json", "r", encoding="utf-8") as f:
         trust_data = json.load(f)
 
+    # Convertir en DataFrame pour un accès plus facile
     df_trust = pd.DataFrame(trust_data)
+
+    # Créer un dictionnaire {marque: trust_score}
     trust_scores = {item["marque"]: float(item.get("trust_score", "0").replace(",", ".")) for item in trust_data}
+
+    # Créer un dictionnaire {marque: nombre de reviews}
     reviews_count = {item["marque"]: int(item.get("reviews", 0)) for item in trust_data}
 
     return trust_scores, reviews_count
 
-# Charger les données
+# Charger le modèle MLflow
+def load_model():
+    model_uri = 'runs:/4a104d66b7ec4b9ea4c06064f3d275e9/final_model'  # Remplacez par l'URI de votre modèle
+    model = mlflow.pyfunc.load_model(model_uri)
+    return model
+
+# Fonction pour prédire avec le modèle MLflow
+def predict(model, commentaire):
+    prediction = model.predict([commentaire])
+    return prediction[0]
+
+# Charger les données et le modèle
 df = load_data()
 trust_scores, reviews_count = load_trust_data()
+model = load_model()
 
 # Vérifier si le DataFrame est vide
 if df.empty:
@@ -52,6 +69,7 @@ total_reviews = reviews_count.get(marque_selectionnee, 0)
 
 # 📌 **Créer une jauge pour le Trust Score**
 def create_trust_gauge(trust_score):
+    import plotly.graph_objects as go
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=trust_score,
@@ -61,32 +79,16 @@ def create_trust_gauge(trust_score):
             'axis': {'range': [0, 5]},
             'bar': {'color': "darkblue"},
             'steps': [
-                {'range': [0, 2], 'color': '#FF4B4B'},
-                {'range': [2, 4], 'color': '#FFA500'},
-                {'range': [4, 5], 'color': '#04AA6D'}
+                {'range': [0, 2], 'color': '#FF4B4B'},  # Rouge (mauvais)
+                {'range': [2, 4], 'color': '#FFA500'},  # Orange (moyen)
+                {'range': [4, 5], 'color': '#04AA6D'}   # Vert (bon)
             ]
         }
     ))
     fig.update_layout(height=300)
     return fig
 
-# 📌 **Charger le modèle depuis MLflow**
-def load_mlflow_model():
-    # Remplacez l'URL et l'URI par votre propre modèle MLflow
-    model_uri = "mlflow-artifacts:/703686963448022104/4a104d66b7ec4b9ea4c06064f3d275e9/artifacts/final_model/model.pkl"
-    model = mlflow.pyfunc.load_model(model_uri)
-    return model
-
-# Charger le modèle
-model = load_mlflow_model()
-
-# Fonction de prédiction
-def predict_rating(commentaire):
-    # Effectuer la prédiction
-    prediction = model.predict([commentaire])
-    return prediction[0]  # Retourner la première prédiction (car on envoie une liste)
-
-# Titre du Dashboard
+# Affichage du titre et des informations générales
 st.title(f"📊 Dashboard d'Analyse des Avis Clients - {marque_selectionnee}")
 
 # 📋 **Résumé des statistiques**
@@ -120,13 +122,13 @@ fig_time_series = px.line(
 )
 st.plotly_chart(fig_time_series, use_container_width=True)
 
-# --- Page de simulation (prédiction à partir du commentaire) ---
-st.sidebar.subheader("💬 Simulation de Prédiction")
+# Section pour la prédiction du rating basé sur le commentaire
+st.subheader("📝 Prédiction de la Note à partir d'un Commentaire")
 
-# Formulaire pour entrer un commentaire
-commentaire = st.text_area("Entrez un commentaire pour prédire la note :")
+# Entrée du commentaire
+commentaire = st.text_area("Entrez votre commentaire ici")
 
-# Prédiction quand l'utilisateur soumet le commentaire
 if commentaire:
-    rating_predicted = predict_rating(commentaire)
-    st.subheader(f"Rating prédit pour ce commentaire : {rating_predicted:.2f}")
+    # Prédire la note à partir du commentaire
+    predicted_rating = predict(model, commentaire)
+    st.write(f"Note prédite : {predicted_rating}")
