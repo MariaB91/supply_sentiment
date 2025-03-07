@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/703686963448022104/4a104d66b7ec4b9ea4c06064f3d275e9/artifacts
+end_time: 1741345803864
+entry_point_name: ''
+experiment_id: '703686963448022104'
+lifecycle_stage: active
+run_id: 4a104d66b7ec4b9ea4c06064f3d275e9
+run_name: trusting-eel-97
+run_uuid: 4a104d66b7ec4b9ea4c06064f3d275e9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1741345796880
+status: 3
+tags: []
+user_id: mbouc

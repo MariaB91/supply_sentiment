@@ -1,0 +1,6 @@
+artifact_location: mlflow-artifacts:/382810447000506792
+creation_time: 1741345358488
+experiment_id: '382810447000506792'
+last_update_time: 1741345358488
+lifecycle_stage: active
+name: Rating_Prediction

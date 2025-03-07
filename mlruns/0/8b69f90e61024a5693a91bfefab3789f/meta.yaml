@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/8b69f90e61024a5693a91bfefab3789f/artifacts
+end_time: 1741344533474
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 8b69f90e61024a5693a91bfefab3789f
+run_name: funny-toad-271
+run_uuid: 8b69f90e61024a5693a91bfefab3789f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1741344526684
+status: 4
+tags: []
+user_id: mbouc

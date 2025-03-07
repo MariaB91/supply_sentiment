@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1741344743504
+current_stage: None
+description: ''
+last_updated_timestamp: 1741344743504
+name: xgboost_sentiment
+run_id: 68d3686577574769968dd85ee3c0b009
+run_link: ''
+source: mlflow-artifacts:/0/68d3686577574769968dd85ee3c0b009/artifacts/final_model
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/0/68d3686577574769968dd85ee3c0b009/artifacts/final_model
+user_id: null
+version: 1
